@@ -1,9 +1,7 @@
 #include "chip8.h"
 #include <fstream>
-#include <ios>
 #include <iostream>
 #include <cstring>
-#include <random>
 
 uint8_t chip8_fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -101,6 +99,18 @@ void Chip8::emulate_cycle(){
             sp++;
             pc = opcode & 0x0FFF;
             break;
+        case 0x3000: // 3XNN = Skip next instruction if v[x] = NN
+            if(v[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) pc += 4;
+            else pc += 2;
+            break;
+        case 0x4000:  // 4XNN - Skip next instruction if v[x] != NN
+            if (v[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) pc += 4;
+            else pc += 2;
+            break;
+        case 0x5000:  // 5XY0 - Skip next instruction if v[x] == v[y]
+            if (v[(opcode & 0x0F00) >> 8] == v[(opcode & 0x00F0) >> 4]) pc += 4;
+            else pc += 2;
+            break;
         case 0x6000: // 6XNN = set v[n] = NN
             v[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
             pc += 2;
@@ -109,8 +119,39 @@ void Chip8::emulate_cycle(){
             v[(opcode & 0x0F00) >> 8] += opcode & 0x00FF;
             pc += 2;
             break;
+        case 0x8000: // Arithmetic operations
+            switch(opcode & 0x000F){ // Look only at last 4 bits
+                // Instruction is of the form 8XYN
+                case 0x0000: // v[x] == v[y]
+                    break;
+                case 0x0001: // v[x] = v[x] | v[y]
+                    break;
+                case 0x0002: // v[x] = v[y] & v[y]
+                    break;
+                case 0x0003: // v[x] = v[y] ^ v[y]
+                    break;
+                case 0x0004: // v[x] += v[y], v[F] = carry
+                    break;
+                case 0x0005: // v[x] -= v[y], v[F] = NOT(borrow)
+                    break;
+                case 0x0006: // v[x] >>= 1, v[F] = LSB
+                    break;
+                case 0x0007: // v[x] = v[y] - v[x], v[F] = NOT(borrow)
+                    break;
+                case 0x000E: // v[x] <<= 1, v[F] = MSB
+                    break;
+                default:
+                    std::cerr << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
+                    pc += 2;
+                    break;
+            }
+            break;
         case 0xA000: // AXXX = set index to XXX
             index = opcode & 0x0FFF;
+            pc += 2;
+            break;
+        default:
+            std::cerr << "Unknown opcode: 0x" << std::hex << opcode << std::endl;
             pc += 2;
             break;
     }
