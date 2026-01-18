@@ -1,35 +1,151 @@
 # Chip-8 Emulator
 
-This project is a fully-functional Chip-8 emulator built in C++.
+A fully-functional Chip-8 emulator built from scratch in C++ with SDL2 graphics and audio support.
+
+## Features
+
+- All 35 Chip-8 opcodes implemented
+- 64x32 pixel display with SDL2 rendering
+- Keyboard input support
+- Sound effects (beep tone)
+- 60 FPS rendering
 
 ## Architecture
 
-Chip-8 is a virtual machine of sorts from the 1970s built to make it easier to program video games on early microcomputers.
+Chip-8 is a virtual machine from the 1970s designed to make programming video games easier on early microcomputers.
 
-The components of the Chip-8 architecture are as follows:-
-- Memory: 4 KB = 4096 bytes
-- Registers:
-    - 16 8-bit general purpose registers (V0 to VF)
-    - 16-bit index register
-    - 16-bit program counter
-    - 8-bit stack pointer register
-- Display: 64x32 pixels in monochrome
-- Keyboard: 16-key keypad
+### System Specifications
+
+- **Memory**: 4 KB (4096 bytes)
+  - `0x000-0x1FF`: Reserved for interpreter and fonts
+  - `0x200-0xFFF`: Program/ROM space
+- **Registers**:
+  - 16 8-bit general-purpose registers (V0-VF)
+  - VF doubles as a flag register for arithmetic operations
+  - 16-bit index register (I)
+  - 16-bit program counter (PC)
+  - 8-bit stack pointer (SP)
+- **Display**: 64×32 pixels, monochrome
+- **Timers**: 
+  - Delay timer (counts down at 60 Hz)
+  - Sound timer (beeps when > 0, counts down at 60 Hz)
+- **Stack**: 16 levels for subroutine calls
+- **Keypad**: 16-key hexadecimal input
+
+## Dependencies
+
+- SDL2 library
+
+### Installation
+
+**Arch Linux:**
+```bash
+sudo pacman -S sdl2
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install libsdl2-dev
+```
+
+**macOS:**
+```bash
+brew install sdl2
+```
+
+## Building
+
+1. Clone the repo
+```bash
+git clone https://github.com/eko-071/chip8-emulator.git
+```
+
+2. Make it
+```bash
+make
+```
+
+## Usage
+```bash
+./chip8 <path-to-rom-file>
+```
+
+**Example:**
+```bash
+./chip8 roms/PONG.ch8
+```
 
 ## Keyboard Mapping
 
-- Original Chip-8 keypad layout (hexadecimal):
+The original Chip-8 keypad is mapped to keyboard keys:
 ```
-1 2 3 C
-4 5 6 D
-7 8 9 E
-A 0 B F
+Chip-8 Keypad:          QWERTY Keyboard:
+┌─┬─┬─┬─┐               ┌─┬─┬─┬─┐
+│1│2│3│C│               │1│2│3│4│
+├─┼─┼─┼─┤               ├─┼─┼─┼─┤
+│4│5│6│D│               │Q│W│E│R│
+├─┼─┼─┼─┤      =        ├─┼─┼─┼─┤
+│7│8│9│E│               │A│S│D│F│
+├─┼─┼─┼─┤               ├─┼─┼─┼─┤
+│A│0│B│F│               │Z│X│C│V│
+└─┴─┴─┴─┘               └─┴─┴─┴─┘
 ```
 
-- The keyboard mapping used here:
+**Controls:**
+- `ESC` - Quit emulator
+- Keyboard keys as mapped above
+
+### Game-Specific Controls
+
+**PONG:**
+- Left paddle: `1` (up), `Q` (down)
+- Right paddle: `4` (up), `R` (down)
+
+**TETRIS:**
+- `Q` - Rotate
+- `W` - Drop
+- `E` - Move right
+- `A` - Move left
+
+## Project Structure
 ```
-1 2 3 4
-Q W E R
-A S D F
-Z X C V
+.
+├── Makefile
+├── README.md
+├── roms # Some ROM files (.ch8)
+│   ├── Blinky.ch8
+│   ├── Pong.ch8
+│   └── Tetris.ch8
+└── src
+    ├── chip8.cpp # Chip-8 class declaration
+    ├── chip8.h # Core emulator logic and opcodes implementation
+    └── main.cpp # SDL2 setup, rendering, input handling and stuff
 ```
+
+## Implementation Details
+
+### Instruction Set
+
+The emulator implements all 35 Chip-8 instructions, including:
+- **Arithmetic**: ADD, SUB, AND, OR, XOR, shift operations
+- **Graphics**: Draw sprites with XOR mode, collision detection
+- **Flow control**: Jump, call/return subroutines, conditional skips
+- **Memory**: Load/store registers, BCD conversion
+- **Timers**: Delay and sound timer operations
+- **Input**: Key press detection (blocking and non-blocking)
+
+### Display
+
+Graphics are rendered using SDL2:
+- Each Chip-8 pixel is scaled 10× for visibility (640×320 window)
+- XOR-based sprite drawing for collision detection
+- 60 FPS rendering
+
+### Audio
+
+Simple square wave generation at 440 Hz (musical note A) plays when `sound_timer > 0`.
+
+## Resources
+
+- [Cowgod's Chip-8 Technical Reference](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)
+- [Chip-8 ROMs Archive](https://github.com/kripod/chip8-roms)
