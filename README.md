@@ -110,6 +110,7 @@ Chip-8 Keypad:          QWERTY Keyboard:
 ## Project Structure
 ```
 .
+├── LICENSE
 ├── Makefile
 ├── README.md
 ├── roms # Some ROM files (.ch8)
