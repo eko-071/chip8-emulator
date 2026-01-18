@@ -7,7 +7,7 @@ OBJECTS = $(SOURCES:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJECTS) -lSDL2
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

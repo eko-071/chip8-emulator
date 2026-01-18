@@ -1,19 +1,73 @@
 #include "chip8.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_error.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_rect.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_video.h>
+#include <cstdint>
 #include <iostream>
-#include <chrono>
-#include <thread>
 
-// Terminal rendering
-void draw_graphics(Chip8& chip8){
+const int SCALE = 10; // Each pixel is 10x10 screen pixels
+const int WIDTH = 64*SCALE;
+const int HEIGHT = 32*SCALE;
+
+// Keyboard mapping
+uint8_t keymap[16] = {
+    SDLK_x, // 0
+    SDLK_1, // 1
+    SDLK_2, // 2
+    SDLK_3, // 3
+    SDLK_q, // 4
+    SDLK_w, // 5
+    SDLK_e, // 6
+    SDLK_a, // 7
+    SDLK_s, // 8
+    SDLK_d, // 9
+    SDLK_z, // A
+    SDLK_c, // B
+    SDLK_4, // C
+    SDLK_r, // D
+    SDLK_f, // E
+    SDLK_v  // F
+};
+
+void draw_graphics(SDL_Renderer* renderer, Chip8& chip8){
     // Clear screen
-    std::cout << "\033[2J\033[1;1H";
-    // Draw 64x32 display
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    // Drawing white pixels
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     for(int y=0; y<32; y++){
         for(int x=0; x<64; x++){
-            if(chip8.display[x + (y*64)] == 0) std::cout << " ";
-            else std::cout << "█";
+            if(chip8.display[x + (y*64)] == 1){
+                SDL_Rect rect = {x*SCALE, y*SCALE, SCALE, SCALE};
+                SDL_RenderFillRect(renderer, &rect);
+            }
         }
-        std::cout << std::endl;
+    }
+    SDL_RenderPresent(renderer);
+}
+
+void handle_input(Chip8& chip8, bool& running){
+    SDL_Event event;
+
+    while(SDL_PollEvent(&event)){
+        if(event.type == SDL_QUIT) running = false;
+        if(event.type == SDL_KEYDOWN){
+            if(event.key.keysym.sym == SDLK_ESCAPE) running = false;
+            // Check which Chip-8 key was pressed
+            for(int i=0; i<16; i++){
+                if(event.key.keysym.sym == keymap[i]) chip8.key[i] = 1;
+            }
+        }
+        if(event.type == SDL_KEYUP){
+            for(int i=0; i<16; i++){
+                if(event.key.keysym.sym == keymap[i]) chip8.key[i] = 0;
+            }
+        }
     }
 }
 
@@ -22,20 +76,42 @@ int main(int argc, char** argv){
         std::cerr << "Usage: " << argv[0] << " <ROM file>" << std::endl;
         return 1;
     }
-    // Create emulator and load ROM
+    if(SDL_Init(SDL_INIT_VIDEO) < 0){
+        std::cerr << "SDL Error: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+    SDL_Window* window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
+    if(!window){
+        std::cerr << "Window error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if(!renderer){
+        std::cerr << "Renderer error: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     Chip8 chip8;
     chip8.load_rom(argv[1]);
-    // Emulation loop
-    while(true){
-        chip8.emulate_cycle();
-        if(chip8.draw_flag){
-            draw_graphics(chip8);
-            chip8.draw_flag = false;
+    
+    bool running = true;
+    while(running){
+        handle_input(chip8, running);
+        for(int i=0; i<10; i++){
+            chip8.emulate_cycle();
         }
-        // I have to put keyboard input here
 
-        // Sleep to control CPU speed (~500Hz)
-        std::this_thread::sleep_for(std::chrono::microseconds(2000));
+        draw_graphics(renderer, chip8);
+
+        SDL_Delay(16); // 60 FPS with 16ms per frame
     }
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
     return 0;
 }

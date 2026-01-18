@@ -15,3 +15,21 @@ The components of the Chip-8 architecture are as follows:-
     - 8-bit stack pointer register
 - Display: 64x32 pixels in monochrome
 - Keyboard: 16-key keypad
+
+## Keyboard Mapping
+
+- Original Chip-8 keypad layout (hexadecimal):
+```
+1 2 3 C
+4 5 6 D
+7 8 9 E
+A 0 B F
+```
+
+- The keyboard mapping used here:
+```
+1 2 3 4
+Q W E R
+A S D F
+Z X C V
+```
