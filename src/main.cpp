@@ -1,10 +1,12 @@
 #include "chip8.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_audio.h>
 #include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keycode.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
 #include <cstdint>
@@ -33,6 +35,25 @@ uint8_t keymap[16] = {
     SDLK_f, // E
     SDLK_v  // F
 };
+
+void audio_callback(void* userdata, uint8_t* stream, int len){
+    static uint32_t sample_index = 0;
+    int16_t* audio_buffer = (int16_t*) stream;
+    int samples = len/2;
+
+    bool* beeping = (bool*) userdata;
+    for(int i=0; i<samples; i++){
+        if(*beeping){
+            // Generating 440Hz sqaure wave
+            int16_t value = ((sample_index++ / 100) % 2) ? 3000 : -3000;
+            audio_buffer[i] = value;
+        }
+        else{
+            audio_buffer[i] = 0; // Silence
+            sample_index = 0;
+        }
+    }
+}
 
 void draw_graphics(SDL_Renderer* renderer, Chip8& chip8){
     // Clear screen
@@ -76,10 +97,25 @@ int main(int argc, char** argv){
         std::cerr << "Usage: " << argv[0] << " <ROM file>" << std::endl;
         return 1;
     }
-    if(SDL_Init(SDL_INIT_VIDEO) < 0){
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0){
         std::cerr << "SDL Error: " << SDL_GetError() << std::endl;
         return 1;
     }
+    // Audio setup
+    bool beeping = false;
+    SDL_AudioSpec want, have;
+    SDL_zero(want);
+    want.freq = 44100;
+    want.format = AUDIO_S16SYS;
+    want.channels = 1;
+    want.samples = 2048;
+    want.callback = audio_callback;
+    want.userdata = &beeping;
+
+    SDL_AudioDeviceID audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    if(audio_device == 0) std::cerr << "Failed to open audio: " << SDL_GetError() << std::endl;
+    else SDL_PauseAudioDevice(audio_device, 0);
+
     SDL_Window* window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
     if(!window){
         std::cerr << "Window error: " << SDL_GetError() << std::endl;
@@ -104,11 +140,12 @@ int main(int argc, char** argv){
             chip8.emulate_cycle();
         }
 
+        beeping = (chip8.get_sound_timer() > 0);
         draw_graphics(renderer, chip8);
 
         SDL_Delay(16); // 60 FPS with 16ms per frame
     }
-
+    if(audio_device != 0) SDL_CloseAudioDevice(audio_device);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

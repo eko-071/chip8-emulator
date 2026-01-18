@@ -206,7 +206,7 @@ void Chip8::emulate_cycle(){
                 for(int x_line=0; x_line<8; x_line++){
                     // Check if current pixel is 1
                     if((pixel & (0x80 >> x_line)) != 0){
-                        int screen_x = (x + x_line) % 64, screen_y = (y + y_line) % 32;
+                        int screen_x = (x + x_line) & 63, screen_y = (y + y_line) & 31;
                         int screen_index = screen_x + (screen_y*64); // 1D display array
                         // Checking for collision
                         if(display[screen_index] == 1) v[0xF] = 1; // Set collision flag
