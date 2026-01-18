@@ -118,8 +118,8 @@ Chip-8 Keypad:          QWERTY Keyboard:
 │   ├── Pong.ch8
 │   └── Tetris.ch8
 └── src
-    ├── chip8.cpp # Chip-8 class declaration
-    ├── chip8.h # Core emulator logic and opcodes implementation
+    ├── chip8.cpp # Core emulator logic and opcodes implementation
+    ├── chip8.h # Chip-8 class declaration
     └── main.cpp # SDL2 setup, rendering, input handling and stuff
 ```
 
